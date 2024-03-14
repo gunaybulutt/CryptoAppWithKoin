@@ -30,11 +30,11 @@ class RecyclerAdapter(private val cryptoList : ArrayList<CryptoModel>, private v
     override fun onBindViewHolder(holder: RowHolder, position: Int) {
 
         holder.itemView.setOnClickListener {
-            listener.onItemClick(cryptoList.get(position))
+            listener.onItemClick(cryptoList[position])
         }
         holder.itemView.setBackgroundColor(Color.parseColor(colors[position % 8]))
-        holder.binding.cryptoNameText.text = cryptoList.get(position).currency
-        holder.binding.cryptoPriceText.text = cryptoList.get(position).price
+        holder.binding.cryptoNameText.text = cryptoList[position].currency
+        holder.binding.cryptoPriceText.text = cryptoList[position].price
     }
 
 
