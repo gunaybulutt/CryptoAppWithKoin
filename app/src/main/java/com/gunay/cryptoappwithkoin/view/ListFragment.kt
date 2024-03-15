@@ -14,24 +14,39 @@ import com.gunay.cryptoappwithkoin.databinding.FragmentListBinding
 import com.gunay.cryptoappwithkoin.model.CryptoModel
 import com.gunay.cryptoappwithkoin.service.CryptoAPI
 import com.gunay.cryptoappwithkoin.viewmodel.CryptoViewModel
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import org.koin.android.ext.android.get
+import org.koin.android.ext.android.inject
+import org.koin.android.scope.AndroidScopeComponent
+import org.koin.androidx.scope.fragmentScope
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.qualifier.named
+import org.koin.core.scope.Scope
 
-
-class ListFragment : Fragment(), RecyclerAdapter.Listener {
+class ListFragment : Fragment(), RecyclerAdapter.Listener, AndroidScopeComponent {
 
 
     private var _binding: FragmentListBinding? = null
     private val binding get() = _binding!!
     private var cryptoAdapter = RecyclerAdapter(arrayListOf(), this)
-    private lateinit var viewModel: CryptoViewModel
+    //koin ile viewModel inject
+    private val viewModel by viewModel<CryptoViewModel>()
 
+    //Android Scope Component'i kullanabilmek için spcope tanımlanması lazım
+    //anotherModule'de scope yaptığımız inject'i yapabilmemiz için AndroidScopeComponent interfacesinin
+    //zorunlu tuttuğu bu scope tanımlamasını yapman gerekiyor default olarak constructor içine alıyor ama
+    //koin yardımıyla direk bu şekillerde const içine almadan tanımlayabiliyorsun
+    override val scope: Scope by fragmentScope()
+    //scope tanımı sonrasında anotherModule içerisinden inject etme işlemi
+    //sanki utilden string çekiyormuş gibi koin scope ile bu şekilde string falan inject edilebiliyor
+    private val hello by inject<String>(qualifier = named("hello"))
+
+    /*
+    //anlamsız ama bi gün gerekebilecek inject yontemleri
+    //normal inject
+    private val api = get<CryptoAPI>()
+    //lazy inject -> kullanılana kadar initialize etmiyor
+    private val apilazy by inject<CryptoAPI>()
+    */
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,8 +70,9 @@ class ListFragment : Fragment(), RecyclerAdapter.Listener {
         val layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.layoutManager = layoutManager
 
-        viewModel = ViewModelProvider(this).get(CryptoViewModel::class.java)
+        //viewModel = ViewModelProvider(this).get(CryptoViewModel::class.java)
         viewModel.getDataFromAPI()
+        println(hello)
 
         observeLiveData()
     }
@@ -66,14 +82,14 @@ class ListFragment : Fragment(), RecyclerAdapter.Listener {
         viewModel.cryptoList.observe(viewLifecycleOwner, Observer {
             it?.let {
                 binding.recyclerView.visibility = View.VISIBLE
-                cryptoAdapter = RecyclerAdapter(ArrayList(it), this@ListFragment)
+                cryptoAdapter = RecyclerAdapter(ArrayList(it.data), this@ListFragment)
                 binding.recyclerView.adapter = cryptoAdapter
             }
         })
 
         viewModel.cryptoEror.observe(viewLifecycleOwner, Observer{
             it?.let {
-                if(it){
+                if(it.data == true){
                     binding.cryptoErrorText.visibility = View.VISIBLE
                     binding.recyclerView.visibility = View.GONE
                 }else{
@@ -84,7 +100,7 @@ class ListFragment : Fragment(), RecyclerAdapter.Listener {
 
         viewModel.cryptoLoading.observe(viewLifecycleOwner, Observer {
             it?.let {
-                if(it){
+                if(it.data == true){
                     binding.cryptoProgressBar.visibility = View.VISIBLE
                     binding.recyclerView.visibility = View.GONE
                     binding.cryptoErrorText.visibility = View.GONE

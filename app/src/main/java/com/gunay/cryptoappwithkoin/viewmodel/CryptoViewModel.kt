@@ -5,52 +5,43 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gunay.cryptoappwithkoin.model.CryptoModel
-import com.gunay.cryptoappwithkoin.service.CryptoAPI
+import com.gunay.cryptoappwithkoin.repo.CryptoDownload
+import com.gunay.cryptoappwithkoin.util.Resource
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
-class CryptoViewModel : ViewModel() {
+class CryptoViewModel(private val cryptoDownloadRepository : CryptoDownload) : ViewModel() {
 
-    val cryptoList = MutableLiveData<List<CryptoModel>>()
-    val cryptoEror = MutableLiveData<Boolean>()
-    val cryptoLoading = MutableLiveData<Boolean>()
+    val cryptoList = MutableLiveData<Resource<List<CryptoModel>>>()
+    val cryptoEror = MutableLiveData<Resource<Boolean>>()
+    val cryptoLoading = MutableLiveData<Resource<Boolean>>()
 
 
     fun getDataFromAPI() {
-        cryptoLoading.value = true
+        cryptoLoading.value = Resource.loading(data = true)
 
-        val BASE_URL = "https://raw.githubusercontent.com/"
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(CryptoAPI::class.java)
 
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-            val response = retrofit.getData()
-
+            val resource = cryptoDownloadRepository.downloadCryptos()
             withContext(Dispatchers.Main) {
-                if (response.isSuccessful) {
-
-                    cryptoEror.value = false
-                    cryptoLoading.value = false
-
-                    response.body()?.let {
-                        cryptoList.value = it
-                    }
+                resource.data?.let {
+                    cryptoList.value = resource
+                    cryptoLoading.value = Resource.loading(data = false)
+                    cryptoEror.value = Resource.error("", data = false)
                 }
+
+
             }
+
         }
     }
 
 
     val exceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
         println("Error : ${throwable.localizedMessage}")
-        cryptoEror.value = true
+        cryptoEror.value = Resource.error(throwable.localizedMessage ?: "error", data = true)
     }
 
 }

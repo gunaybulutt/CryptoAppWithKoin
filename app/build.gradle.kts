@@ -70,6 +70,11 @@ dependencies {
     //implementation("com.google.dagger:hilt-android:2.48")
     //kapt("com.google.dagger:hilt-android-compiler:2.48")
 
+    //Kotlin-Koin
+    implementation ("io.insert-koin:koin-android:3.2.0-beta-1")
+    implementation ("io.insert-koin:koin-androidx-navigation:3.2.0-beta-1")
+    testImplementation ("io.insert-koin:koin-test-junit4:3.2.0-beta-1")
+
     //Room
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
